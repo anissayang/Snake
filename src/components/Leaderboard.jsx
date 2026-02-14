@@ -29,7 +29,7 @@ const Leaderboard = ({ onBack, fetchLeaderboard }) => {
     }, [fetchLeaderboard]);
 
     return (
-        <div className="panel" style={{ width: '90%', maxWidth: '600px' }}>
+        <div className="panel">
             <h2>TOP 3 PLAYERS</h2>
 
             {loading ? (
