@@ -63,22 +63,30 @@ const GameCanvas = ({ onGameOver }) => {
             const currentDir = directionRef.current;
             switch (e.key) {
                 case 'ArrowUp':
+                case 'w':
+                case 'W':
                     if (currentDir.y === 0) nextDirectionRef.current = { x: 0, y: -1 };
                     break;
                 case 'ArrowDown':
+                case 's':
+                case 'S':
                     if (currentDir.y === 0) nextDirectionRef.current = { x: 0, y: 1 };
                     break;
                 case 'ArrowLeft':
+                case 'a':
+                case 'A':
                     if (currentDir.x === 0) nextDirectionRef.current = { x: -1, y: 0 };
                     break;
                 case 'ArrowRight':
+                case 'd':
+                case 'D':
                     if (currentDir.x === 0) nextDirectionRef.current = { x: 1, y: 0 };
                     break;
                 default:
                     break;
             }
-            // Start game on first key press if stationary
-            if (currentDir.x === 0 && currentDir.y === 0 && (e.key.startsWith('Arrow'))) {
+            // Start game on first move if stationary
+            if (currentDir.x === 0 && currentDir.y === 0 && (nextDirectionRef.current.x !== 0 || nextDirectionRef.current.y !== 0)) {
                 directionRef.current = nextDirectionRef.current;
             }
         };
@@ -87,43 +95,72 @@ const GameCanvas = ({ onGameOver }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
+    // Touch Handling (Swipe)
+    const touchStart = useRef(null);
+    const handleTouchStart = (e) => {
+        touchStart.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+        };
+    };
+
+    const handleTouchEnd = (e) => {
+        if (!touchStart.current) return;
+        const touchEnd = {
+            x: e.changedTouches[0].clientX,
+            y: e.changedTouches[0].clientY
+        };
+        const dx = touchEnd.x - touchStart.current.x;
+        const dy = touchEnd.y - touchStart.current.y;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (Math.abs(dx) > 30) {
+                if (dx > 0 && directionRef.current.x === 0) nextDirectionRef.current = { x: 1, y: 0 };
+                else if (dx < 0 && directionRef.current.x === 0) nextDirectionRef.current = { x: -1, y: 0 };
+            }
+        } else {
+            if (Math.abs(dy) > 30) {
+                if (dy > 0 && directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: 1 };
+                else if (dy < 0 && directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: -1 };
+            }
+        }
+        touchStart.current = null;
+    };
+
+    const handleDirectionPress = (dir) => {
+        const currentDir = directionRef.current;
+        if (dir === 'UP' && currentDir.y === 0) nextDirectionRef.current = { x: 0, y: -1 };
+        if (dir === 'DOWN' && currentDir.y === 0) nextDirectionRef.current = { x: 0, y: 1 };
+        if (dir === 'LEFT' && currentDir.x === 0) nextDirectionRef.current = { x: -1, y: 0 };
+        if (dir === 'RIGHT' && currentDir.x === 0) nextDirectionRef.current = { x: 1, y: 0 };
+    };
+
     // Main Game Loop
     const gameLoop = (timestamp) => {
         if (!gameRunningRef.current) return;
 
-        // Update Timer
         const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
         setTime(elapsed);
 
-        // Update Game Logic based on speed
         if (timestamp - lastUpdateRef.current > speedRef.current) {
             updateGame();
             lastUpdateRef.current = timestamp;
         }
 
-        // Render Particles (smooth animation, independent of snake speed)
         updateParticles();
-
-        // Draw Everything
         drawGame();
-
         requestRef.current = requestAnimationFrame(gameLoop);
     };
 
     const updateGame = () => {
-        // 1. Update Direction
         directionRef.current = nextDirectionRef.current;
         const dir = directionRef.current;
-
-        // Skip update if not moving
         if (dir.x === 0 && dir.y === 0) return;
 
-        // 2. Move Snake
         const head = { ...snakeRef.current[0] };
         head.x += dir.x;
         head.y += dir.y;
 
-        // 3. Check Wall Collision
         const gridW = GAME_CONFIG.canvasWidth / GAME_CONFIG.gridSize;
         const gridH = GAME_CONFIG.canvasHeight / GAME_CONFIG.gridSize;
 
@@ -132,43 +169,31 @@ const GameCanvas = ({ onGameOver }) => {
             return;
         }
 
-        // 4. Check Self Collision
         if (snakeRef.current.some(segment => segment.x === head.x && segment.y === head.y)) {
             handleGameOver();
             return;
         }
 
-        // 5. Check Fruit Collision
         const fruit = fruitRef.current;
         if (fruit && head.x === fruit.x && head.y === fruit.y) {
-            // Ate fruit
             scoreRef.current += fruit.points;
             setScore(scoreRef.current);
             createExplosion(head.x, head.y, fruit.color);
-
-            // Speed up slightly
             speedRef.current = Math.max(50, speedRef.current - GAME_CONFIG.speedIncrement);
-
             spawnFruit();
-            // Grow snake: don't pop tail
         } else {
-            // Did not eat: pop tail to maintain length
             snakeRef.current.pop();
         }
-
         snakeRef.current.unshift(head);
     };
 
     const updateParticles = () => {
-        // Simple particle physics logic
         for (let i = particlesRef.current.length - 1; i >= 0; i--) {
             const p = particlesRef.current[i];
             p.x += p.vx;
             p.y += p.vy;
             p.life -= 0.05;
-            if (p.life <= 0) {
-                particlesRef.current.splice(i, 1);
-            }
+            if (p.life <= 0) particlesRef.current.splice(i, 1);
         }
     };
 
@@ -178,46 +203,29 @@ const GameCanvas = ({ onGameOver }) => {
         const ctx = canvas.getContext('2d');
         const gs = GAME_CONFIG.gridSize;
 
-        // Clear Canvas
         ctx.fillStyle = COLORS.background;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw Fruit
         const fruit = fruitRef.current;
         if (fruit) {
             ctx.fillStyle = fruit.color;
-            // Simple circle for fruit
             ctx.beginPath();
-            ctx.arc(
-                fruit.x * gs + gs / 2,
-                fruit.y * gs + gs / 2,
-                gs / 2 - 2,
-                0,
-                Math.PI * 2
-            );
+            ctx.arc(fruit.x * gs + gs / 2, fruit.y * gs + gs / 2, gs / 2 - 2, 0, Math.PI * 2);
             ctx.fill();
-
-            // Add a cute leaf
             ctx.fillStyle = "#2ECC71";
             ctx.fillRect(fruit.x * gs + gs / 2, fruit.y * gs - 2, 4, 4);
         }
 
-        // Draw Snake
         snakeRef.current.forEach((segment, index) => {
             ctx.fillStyle = index === 0 ? COLORS.snakeHead : COLORS.snakeBody;
             ctx.fillRect(segment.x * gs, segment.y * gs, gs, gs);
-
-            // Eyes for head
             if (index === 0) {
                 ctx.fillStyle = "black";
-                const dir = directionRef.current;
-                // Simplified eye logic
                 ctx.fillRect(segment.x * gs + 4, segment.y * gs + 4, 4, 4);
                 ctx.fillRect(segment.x * gs + 12, segment.y * gs + 4, 4, 4);
             }
         });
 
-        // Draw Particles
         particlesRef.current.forEach(p => {
             ctx.globalAlpha = p.life;
             ctx.fillStyle = p.color;
@@ -229,12 +237,10 @@ const GameCanvas = ({ onGameOver }) => {
     const handleGameOver = () => {
         gameRunningRef.current = false;
         cancelAnimationFrame(requestRef.current);
-        // Final explosion effect or shake could go here
         const finalDuration = Math.floor((Date.now() - startTimeRef.current) / 1000);
         onGameOver(scoreRef.current, finalDuration);
     };
 
-    // Init
     useEffect(() => {
         spawnFruit();
         requestRef.current = requestAnimationFrame(gameLoop);
@@ -248,13 +254,32 @@ const GameCanvas = ({ onGameOver }) => {
                 <span>SCORE: {score}</span>
                 <span>TIME: {time}s</span>
             </div>
-            <canvas
-                ref={canvasRef}
-                width={GAME_CONFIG.canvasWidth}
-                height={GAME_CONFIG.canvasHeight}
-            />
-            <div style={{ fontSize: '0.7em', marginTop: '5px', color: '#555' }}>
-                USE ARROW KEYS TO MOVE
+
+            <div
+                className="canvas-wrapper"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+            >
+                <canvas
+                    ref={canvasRef}
+                    width={GAME_CONFIG.canvasWidth}
+                    height={GAME_CONFIG.canvasHeight}
+                />
+            </div>
+
+            <div className="mobile-controls">
+                <div className="d-pad">
+                    <button className="d-btn up" onClick={() => handleDirectionPress('UP')}>▲</button>
+                    <div className="d-middle">
+                        <button className="d-btn left" onClick={() => handleDirectionPress('LEFT')}>◀</button>
+                        <button className="d-btn down" onClick={() => handleDirectionPress('DOWN')}>▼</button>
+                        <button className="d-btn right" onClick={() => handleDirectionPress('RIGHT')}>▶</button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="controls-hint">
+                <p>PC: Arrow Keys | Mobile: Swipe or Buttons</p>
             </div>
         </div>
     );
