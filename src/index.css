@@ -149,6 +149,12 @@ h2 {
 }
 
 @media (max-width: 768px) {
+    .panel {
+        width: 90%;
+        padding: 1.5rem 1rem;
+        box-sizing: border-box;
+    }
+
     .mobile-controls {
         display: block;
     }
@@ -158,6 +164,7 @@ h2 {
         padding: 8px;
         width: 90%;
         /* 確保計分板也縮小 */
+        box-sizing: border-box;
     }
 
     .canvas-wrapper {

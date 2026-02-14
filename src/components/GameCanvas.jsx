@@ -260,7 +260,8 @@ const GameCanvas = ({ onGameOver }) => {
             </div>
 
             <div className="controls-hint">
-                <p>PC: Arrow Keys | Mobile: Swipe to Move</p>
+                <p>PC: Arrow Keys</p>
+                <p>Mobile: Swipe to Move</p>
             </div>
         </div>
     );
