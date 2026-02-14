@@ -2,8 +2,6 @@
 
 A vibrant, retro-style Snake game built with **React** and **Google Apps Script**.
 
-![Snake Game Banner](https://via.placeholder.com/800x400.png?text=Pixel+Art+Snake+Game)
-
 ## 🎮 Features
 
 - **Classic Gameplay**: Navigate the snake to eat fruits and grow longer.
