@@ -127,14 +127,6 @@ const GameCanvas = ({ onGameOver }) => {
         touchStart.current = null;
     };
 
-    const handleDirectionPress = (dir) => {
-        const currentDir = directionRef.current;
-        if (dir === 'UP' && currentDir.y === 0) nextDirectionRef.current = { x: 0, y: -1 };
-        if (dir === 'DOWN' && currentDir.y === 0) nextDirectionRef.current = { x: 0, y: 1 };
-        if (dir === 'LEFT' && currentDir.x === 0) nextDirectionRef.current = { x: -1, y: 0 };
-        if (dir === 'RIGHT' && currentDir.x === 0) nextDirectionRef.current = { x: 1, y: 0 };
-    };
-
     // Main Game Loop
     const gameLoop = (timestamp) => {
         if (!gameRunningRef.current) return;
@@ -267,19 +259,8 @@ const GameCanvas = ({ onGameOver }) => {
                 />
             </div>
 
-            <div className="mobile-controls">
-                <div className="d-pad">
-                    <button className="d-btn up" onClick={() => handleDirectionPress('UP')}>▲</button>
-                    <div className="d-middle">
-                        <button className="d-btn left" onClick={() => handleDirectionPress('LEFT')}>◀</button>
-                        <button className="d-btn down" onClick={() => handleDirectionPress('DOWN')}>▼</button>
-                        <button className="d-btn right" onClick={() => handleDirectionPress('RIGHT')}>▶</button>
-                    </div>
-                </div>
-            </div>
-
             <div className="controls-hint">
-                <p>PC: Arrow Keys | Mobile: Swipe or Buttons</p>
+                <p>PC: Arrow Keys | Mobile: Swipe to Move</p>
             </div>
         </div>
     );

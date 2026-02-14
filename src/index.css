@@ -156,6 +156,14 @@ h2 {
     .stats-bar {
         font-size: 0.6rem;
         padding: 8px;
+        width: 90%;
+        /* 確保計分板也縮小 */
+    }
+
+    .canvas-wrapper {
+        width: 90%;
+        /* 讓左右保留 5% 的邊距 */
+        margin: 10px 0;
     }
 
     h1 {
